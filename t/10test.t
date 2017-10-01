@@ -1,11 +1,24 @@
-use strict;
-use warnings;
+use v6;
 
-use Test::More;
+use Test;
 
-use SQL::Abstract::Test import => [qw(
-  eq_sql_bind eq_sql eq_bind is_same_sql_bind dumper $sql_differ
-)];
+class Life::Universe::Everything is Any { has Int $.answer = 42; }
+class Life::Universe::Everything::S is Int {
+    method new {
+        Metamodel::Primitives.rebless(42, self);
+    }
+}
+class Life::Universe::Everything::A is Array {
+    method new {
+        Metamodel::Primitives.rebless(Array.new(42), self);
+    }
+}
+role SQL_Literal { };
+
+use SQL::Abstract6::Test :test, :vars, :dumper;
+#   import => [qw(
+#     eq_sql_bind eq_sql eq_bind is_same_sql_bind dumper $sql_differ
+#   )];
 
 my @sql_tests = (
       # WHERE condition - equal
@@ -785,8 +798,8 @@ my @bind_tests = (
   {
     equal => 1,
     bindvals => [
-      undef,
-      undef,
+      Nil,
+      Nil,
     ]
   },
   {
@@ -816,8 +829,8 @@ my @bind_tests = (
   {
     equal => 1,
     bindvals => [
-      \42,
-      \42,
+      \(42),
+      \(42),
       \'42',
     ]
   },
@@ -871,22 +884,22 @@ my @bind_tests = (
   {
     equal => 1,
     bindvals => [
-      bless(\(local $_ = 42), 'Life::Universe::Everything'),
-      bless(\(local $_ = 42), 'Life::Universe::Everything'),
+      Life::Universe::Everything::S.new,
+      Life::Universe::Everything::S.new,
     ]
   },
   {
     equal => 1,
     bindvals => [
-      bless([42], 'Life::Universe::Everything'),
-      bless([42], 'Life::Universe::Everything'),
+      Life::Universe::Everything::A.new,
+      Life::Universe::Everything::A.new,
     ]
   },
   {
     equal => 1,
     bindvals => [
-      bless({ answer => 42 }, 'Life::Universe::Everything'),
-      bless({ answer => 42 }, 'Life::Universe::Everything'),
+      Life::Universe::Everything.new,
+      Life::Universe::Everything.new,
     ]
   },
 
@@ -894,8 +907,8 @@ my @bind_tests = (
   {
     equal => 1,
     bindvals => [
-      [42, { foo => 'bar', quux => [1, 2, \3, { quux => [4, 5] } ] }, 8 ],
-      [42, { foo => 'bar', quux => [1, 2, \3, { quux => [4, 5] } ] }, 8 ],
+      [42, { foo => 'bar', quux => [1, 2, \(3), { quux => [4, 5] } ] }, 8 ],
+      [42, { foo => 'bar', quux => [1, 2, \(3), { quux => [4, 5] } ] }, 8 ],
     ]
   },
 
@@ -904,7 +917,7 @@ my @bind_tests = (
   {
     equal => 0,
     bindvals => [
-      undef,
+      Nil,
       'foo',
       42,
     ]
@@ -914,9 +927,9 @@ my @bind_tests = (
   {
     equal => 0,
     bindvals => [
-      \undef,
+      \Nil,
       \'foo',
-      \42,
+      \(42),
     ]
   },
 
@@ -924,7 +937,7 @@ my @bind_tests = (
   {
     equal => 0,
     bindvals => [
-      [undef],
+      [Nil],
       ['foo'],
       [42],
     ]
@@ -934,7 +947,7 @@ my @bind_tests = (
   {
     equal => 0,
     bindvals => [
-      { foo => undef },
+      { foo => Nil },
       { foo => 'bar' },
       { foo => 42 },
     ]
@@ -955,24 +968,24 @@ my @bind_tests = (
   {
     equal => 0,
     bindvals => [
-      [42, { foo => 'bar', quux => [1, 2, \3, { quux => [4, 5] } ] }, 8 ],
-      [43, { foo => 'bar', quux => [1, 2, \3, { quux => [4, 5] } ] }, 8 ],
-      [42, { foo => 'baz', quux => [1, 2, \3, { quux => [4, 5] } ] }, 8 ],
-      [42, { bar => 'bar', quux => [1, 2, \3, { quux => [4, 5] } ] }, 8 ],
-      [42, { foo => 'bar', quuux => [1, 2, \3, { quux => [4, 5] } ] }, 8 ],
-      [42, { foo => 'bar', quux => [0, 1, 2, \3, { quux => [4, 5] } ] }, 8 ],
+      [42, { foo => 'bar', quux => [1, 2, \(3), { quux => [4, 5] } ] }, 8 ],
+      [43, { foo => 'bar', quux => [1, 2, \(3), { quux => [4, 5] } ] }, 8 ],
+      [42, { foo => 'baz', quux => [1, 2, \(3), { quux => [4, 5] } ] }, 8 ],
+      [42, { bar => 'bar', quux => [1, 2, \(3), { quux => [4, 5] } ] }, 8 ],
+      [42, { foo => 'bar', quuux => [1, 2, \(3), { quux => [4, 5] } ] }, 8 ],
+      [42, { foo => 'bar', quux => [0, 1, 2, \(3), { quux => [4, 5] } ] }, 8 ],
       [42, { foo => 'bar', quux => [1, 2, 3, { quux => [4, 5] } ] }, 8 ],
-      [42, { foo => 'bar', quux => [1, 2, \4, { quux => [4, 5] } ] }, 8 ],
-      [42, { foo => 'bar', quux => [1, 2, \3, { quuux => [4, 5] } ] }, 8 ],
-      [42, { foo => 'bar', quux => [1, 2, \3, { quux => [4, 5, 6] } ] }, 8 ],
-      [42, { foo => 'bar', quux => [1, 2, \3, { quux => 4 } ] }, 8 ],
-      [42, { foo => 'bar', quux => [1, 2, \3, { quux => [4, 5], quuux => 1 } ] }, 8 ],
-      [42, { foo => 'bar', quux => [1, 2, \3, { quux => [4, 5] } ] }, 8, 9 ],
+      [42, { foo => 'bar', quux => [1, 2, \(4), { quux => [4, 5] } ] }, 8 ],
+      [42, { foo => 'bar', quux => [1, 2, \(3), { quuux => [4, 5] } ] }, 8 ],
+      [42, { foo => 'bar', quux => [1, 2, \(3), { quux => [4, 5, 6] } ] }, 8 ],
+      [42, { foo => 'bar', quux => [1, 2, \(3), { quux => 4 } ] }, 8 ],
+      [42, { foo => 'bar', quux => [1, 2, \(3), { quux => [4, 5], quuux => 1 } ] }, 8 ],
+      [42, { foo => 'bar', quux => [1, 2, \(3), { quux => [4, 5] } ] }, 8, 9 ],
     ]
   },
 );
 
-for my $test (@sql_tests) {
+for @sql_tests -> $test {
 
   # this does not work on 5.8.8 and earlier :(
   #local @{*SQL::Abstract::Test::}{keys %{$test->{opts}}} = map { \$_ } values %{$test->{opts}}
@@ -980,58 +993,56 @@ for my $test (@sql_tests) {
 
   my %restore_globals;
 
-  for (keys %{$test->{opts} || {} }) {
-    $restore_globals{$_} = ${${*SQL::Abstract::Test::}{$_}};
-    ${*SQL::Abstract::Test::}{$_} = \ do { my $cp = $test->{opts}{$_} };
+  for ($test<opts> || {} ).keys {
+    %restore_globals{$_} = $SQL::Abstract::Test::($_);
+    $SQL::Abstract::Test::($_) = $test<opts>{$_};
   }
 
-  my $statements = $test->{statements};
-  while (@$statements) {
-    my $sql1 = shift @$statements;
-    foreach my $sql2 (@$statements) {
+  my $statements = $test<statements>;
+  while ($statements.elems) {
+    my $sql1 = shift $statements;
+    for $statements -> $sql2 {
 
       my $equal = eq_sql($sql1, $sql2);
 
-      TODO: {
-        local $TODO = $test->{todo} if $test->{todo};
+      todo($test<todo>) if $test<todo>;
 
-        if ($test->{equal}) {
-          ok($equal, "equal SQL expressions should have been considered equal");
-        } else {
-          ok(!$equal, "different SQL expressions should have been considered not equal");
-        }
+      if ($test<equal>) {
+        ok($equal, "equal SQL expressions should have been considered equal");
+      } else {
+        ok(!$equal, "different SQL expressions should have been considered not equal");
+      }
 
-        if ($equal ^ $test->{equal}) {
-          my ($ast1, $ast2) = map { SQL::Abstract::Test::parse ($_) } ($sql1, $sql2);
-          $_ = dumper($_) for ($ast1, $ast2);
+      if ($equal ^^ $test<equal>) {
+        my ($ast1, $ast2) = map { SQL::Abstract::Test::parse($_) }, ($sql1, $sql2);
+        $_ = dumper($_) for ($ast1, $ast2);
 
-          diag "sql1: $sql1";
-          diag "sql2: $sql2";
-          note $sql_differ || 'No differences found';
-          note "ast1: $ast1";
-          note "ast2: $ast2";
-        }
+        diag "sql1: $sql1";
+        diag "sql2: $sql2";
+        note $sql_differ || 'No differences found';
+        note "ast1: $ast1";
+        note "ast2: $ast2";
       }
     }
   }
 
-  ${*SQL::Abstract::Test::}{$_} = \$restore_globals{$_}
+  $SQL::Abstract::Test::($_) = %restore_globals{$_}
     for keys %restore_globals;
 }
 
-for my $test (@bind_tests) {
-  my $bindvals = $test->{bindvals};
-  while (@$bindvals) {
-    my $bind1 = shift @$bindvals;
-    foreach my $bind2 (@$bindvals) {
+for @bind_tests -> $test {
+  my $bindvals = $test<bindvals>;
+  while ($bindvals) {
+    my $bind1 = shift $bindvals;
+    for $bindvals -> $bind2 {
       my $equal = eq_bind($bind1, $bind2);
-      if ($test->{equal}) {
+      if ($test<equal>) {
         ok($equal, "equal bind values considered equal");
       } else {
         ok(!$equal, "different bind values considered not equal");
       }
 
-      if ($equal ^ $test->{equal}) {
+      if ($equal ^^ $test<equal>) {
         diag("bind1: " . dumper($bind1));
         diag("bind2: " . dumper($bind2));
       }
@@ -1068,7 +1079,7 @@ ok (! eq_sql (
 ));
 like(
   $sql_differ,
-  qr/\Q[ source ] != [ sUOrce ]/,
+  rx/ '[ source ] != [ sUOrce ]' /,
   'expected debug of literal diff',
 );
 
@@ -1078,7 +1089,7 @@ ok (! eq_sql (
 ));
 like(
   $sql_differ,
-  qr/\QOP [ORDER BY] != [GROUP BY]/,
+  rx/ 'OP [ORDER BY] != [GROUP BY]' /,
   'expected debug of op diff',
 );
 
@@ -1089,7 +1100,7 @@ ok (! eq_sql (
 
 like(
   $sql_differ,
-  qr|\Q[WHERE source = ?] != [N/A]|,
+  rx| '[WHERE source = ?] != [N/A]' |,
   'expected debug of missing branch',
 );
 
@@ -1106,4 +1117,5 @@ is_same_sql_bind(
   'double arrayrefref unpacks correctly'
 );
 
-done_testing;
+done-testing;
+# vim:set syntax=perl6:

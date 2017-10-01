@@ -1,4 +1,4 @@
-unit module SQL;
+unit module SQL:ver<0.1.0>:auth<dmaestro (doug@theschrags.net)>;
 use v6;
 
 use Inline::Perl5;

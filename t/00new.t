@@ -1,10 +1,9 @@
-use strict;
-use warnings;
-use Test::More;
-use Test::Warn;
+use v6;
+use Test;
+use Test::Output;
 
-use SQL::Abstract::Test import => ['is_same_sql'];
-use SQL::Abstract;
+use SQL::Abstract6::Test :test;
+use SQL::Abstract6;
 
 my @handle_tests = (
       #1
@@ -79,26 +78,26 @@ my @handle_tests = (
               stmt => 'SELECT * FROM test WHERE ( ( UPPER(hostname) IN ( UPPER(?), UPPER(?), UPPER(?), UPPER(?) ) AND ( ( UPPER(ticket) = UPPER(?) ) OR ( UPPER(ticket) = UPPER(?) ) OR ( UPPER(ticket) = UPPER(?) ) ) ) OR ( UPPER(tack) BETWEEN UPPER(?) AND UPPER(?) ) OR ( ( ( UPPER(a) = UPPER(?) ) OR ( UPPER(a) = UPPER(?) ) OR ( UPPER(a) = UPPER(?) ) ) AND ( ( UPPER(e) != UPPER(?) ) OR ( UPPER(e) != UPPER(?) ) ) AND UPPER(q) NOT IN ( UPPER(?), UPPER(?), UPPER(?), UPPER(?), UPPER(?), UPPER(?), UPPER(?) ) ) )',
               where => [ { ticket => [11, 12, 13],
                            hostname => { in => ['ntf', 'avd', 'bvd', '123'] } },
-                        { tack => { between => [qw/tick tock/] } },
-                        { a => [qw/b c d/],
-                          e => { '!=', [qw(f g)] },
+                        { tack => { between => [ qw/tick tock/ ] } },
+                        { a => [ qw/b c d/ ],
+                          e => { '!=', [ qw/f g/ ] },
                           q => { 'not in', [14..20] } } ],
-              warns => qr/\QA multi-element arrayref as an argument to the inequality op '!=' is technically equivalent to an always-true 1=1/,
+              warns => "A multi-element arrayref as an argument to the inequality op '!=' is technically equivalent to an always-true 1=1",
       },
 );
 
 for (@handle_tests) {
-  my $sqla  = SQL::Abstract->new($_->{args});
+  my $sqla  = SQL::Abstract6.new($_<args>);
   my $stmt;
-  warnings_exist {
-    $stmt = $sqla->select(
+  stderr-is {
+    $stmt = $sqla.select(
       'test',
       '*',
-      $_->{where} || { a => 4, b => 0}
+      $_<where> || { a => 4, b => 0}
     );
-  } $_->{warns} || [];
+  }, $_<warns> // "";
 
-  is_same_sql($stmt, $_->{stmt});
+  is_same_sql($stmt, $_<stmt>);
 }
 
-done_testing;
+done-testing;

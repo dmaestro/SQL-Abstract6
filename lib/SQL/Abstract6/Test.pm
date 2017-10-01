@@ -1,27 +1,24 @@
-package SQL::Abstract::Test; # see doc at end of file
+unit module SQL::Abstract6::Test; # see doc at end of file
+use v6;
 
-use strict;
-use warnings;
-use base qw(Test::Builder::Module Exporter);
-use Test::Builder;
-use Test::Deep ();
-use SQL::Abstract::Tree;
+use Test;
+use SQL::Abstract::Tree:from<Perl5>;
 
-our @EXPORT_OK = qw(
-  is_same_sql_bind is_same_sql is_same_bind
-  eq_sql_bind eq_sql eq_bind dumper diag_where
-  $case_sensitive $sql_differ
-);
+#   our @EXPORT_OK = qw(
+#     is_same_sql_bind is_same_sql is_same_bind
+#     eq_sql_bind eq_sql eq_bind dumper diag_where
+#     $case_sensitive $sql_differ
+#   );
 
-my $sqlat = SQL::Abstract::Tree->new;
+my $sqlat = SQL::Abstract::Tree.new;
 
-our $case_sensitive = 0;
+our $case_sensitive is export(:vars) = 0;
 our $parenthesis_significant = 0;
 our $order_by_asc_significant = 0;
 
-our $sql_differ; # keeps track of differing portion between SQLs
-our $tb = __PACKAGE__->builder;
+our $sql_differ is export(:vars); # keeps track of differing portion between SQLs
 
+#`<<
 sub _unpack_arrayrefref {
 
   my @args;
@@ -43,16 +40,25 @@ sub _unpack_arrayrefref {
 
   @args;
 }
+>>
 
-sub is_same_sql_bind {
-  my ($sql1, $bind_ref1, $sql2, $bind_ref2, $msg) = &_unpack_arrayrefref;
-
+multi sub is_same_sql_bind(Capture $query1,
+    Capture $query2,
+    Str $msg) is export(:test) {
+    die "Invalid arguments!"
+        if not ( $query1.elems == 1 && $query2.elems == 1 )
+            or $query1.hash.elems or $query2.hash.elems;
+    is_same_sql_bind($query1[0][0], $query1[0][1],
+        $query2[0][0], $query2[0][1], $msg);
+}
+multi sub is_same_sql_bind(Str $sql1, Array $bind_ref1,
+    Str $sql2, Array $bind_ref2,
+    Str $msg) is export(:test) {
   # compare
   my $same_sql  = eq_sql($sql1, $sql2);
   my $same_bind = eq_bind($bind_ref1, $bind_ref2);
 
-  # call Test::Builder::ok
-  my $ret = $tb->ok($same_sql && $same_bind, $msg);
+  my $ret = ok($same_sql && $same_bind, $msg);
 
   # add debugging info
   if (!$same_sql) {
@@ -66,14 +72,11 @@ sub is_same_sql_bind {
   return $ret;
 }
 
-sub is_same_sql {
-  my ($sql1, $sql2, $msg) = @_;
-
+sub is_same_sql($sql1, $sql2, $msg) is export(:test) {
   # compare
   my $same_sql = eq_sql($sql1, $sql2);
 
-  # call Test::Builder::ok
-  my $ret = $tb->ok($same_sql, $msg);
+  my $ret = ok($same_sql, $msg);
 
   # add debugging info
   if (!$same_sql) {
@@ -84,14 +87,11 @@ sub is_same_sql {
   return $ret;
 }
 
-sub is_same_bind {
-  my ($bind_ref1, $bind_ref2, $msg) = @_;
-
+sub is_same_bind($bind_ref1, $bind_ref2, $msg) is export(:test) {
   # compare
   my $same_bind = eq_bind($bind_ref1, $bind_ref2);
 
-  # call Test::Builder::ok
-  my $ret = $tb->ok($same_bind, $msg);
+  my $ret = ok($same_bind, $msg);
 
   # add debugging info
   if (!$same_bind) {
@@ -102,56 +102,60 @@ sub is_same_bind {
   return $ret;
 }
 
-sub dumper {
+sub dumper is export(:dumper) {
   # FIXME
   # if we save the instance, we will end up with $VARx references
   # no time to figure out how to avoid this (Deepcopy is *not* an option)
-  require Data::Dumper;
-  Data::Dumper->new([])->Terse(1)->Indent(1)->Useqq(1)->Deparse(1)->Quotekeys(0)->Sortkeys(1)->Maxdepth(0)
-    ->Values([@_])->Dump;
+# require Data::Dumper;
+# Data::Dumper->new([])->Terse(1)->Indent(1)->Useqq(1)->Deparse(1)->Quotekeys(0)->Sortkeys(1)->Maxdepth(0)
+#   ->Values([@_])->Dump;
+  [@_].perl;
 }
 
-sub diag_where{
-  $tb->diag("Search term:\n" . &dumper);
+sub diag_where is export(:test) {
+  diag( "Search term:\n" . dumper(@_) );
 }
 
-sub _sql_differ_diag {
-  my $sql1 = shift || '';
-  my $sql2 = shift || '';
-
-  $tb->${\($tb->in_todo ? 'note' : 'diag')} (
+sub _sql_differ_diag($sql1 = '', $sql2 = '') {
+# $tb->${\($tb->in_todo ? 'note' : 'diag')} (
+    diag(
        "SQL expressions differ\n"
-      ." got: $sql1\n"
-      ."want: $sql2\n"
-      ."\nmismatch around\n$sql_differ\n"
+      ~" got: $sql1\n"
+      ~"want: $sql2\n"
+      ~"\nmismatch around\n$sql_differ\n"
   );
 }
 
-sub _bind_differ_diag {
-  my ($bind_ref1, $bind_ref2) = @_;
-
-  $tb->${\($tb->in_todo ? 'note' : 'diag')} (
+sub _bind_differ_diag($bind_ref1, $bind_ref2) {
+# $tb->${\($tb->in_todo ? 'note' : 'diag')} (
+  diag(
     "BIND values differ " . dumper({ got => $bind_ref1, want => $bind_ref2 })
   );
 }
 
-sub eq_sql_bind {
-  my ($sql1, $bind_ref1, $sql2, $bind_ref2) = &_unpack_arrayrefref;
-
+multi sub eq_sql_bind(Capture $query1, Capture $query2) is export(:test) {
+    die "Invalid arguments!"
+        if not ( $query1.elems == 1 && $query2.elems == 1 )
+            or $query1.hash.elems or $query2.hash.elems;
+  return eq_sql_bind($query1[0][0], $query1[0][1], $query2[0][0], $query2[0][1]);
+}
+multi sub eq_sql_bind(Str $sql1, Array $bind_ref1, Str $sql2, Array $bind_ref2) is export(:test) {
   return eq_sql($sql1, $sql2) && eq_bind($bind_ref1, $bind_ref2);
 }
 
 
-sub eq_bind { goto &Test::Deep::eq_deeply };
+sub eq_bind($left, $right)  is export(:test) {
+    $left eqv $right;
+};
 
-sub eq_sql {
+sub eq_sql is export(:test) {
   my ($sql1, $sql2) = @_;
 
   # parse
-  my $tree1 = $sqlat->parse($sql1);
-  my $tree2 = $sqlat->parse($sql2);
+  my $tree1 = $sqlat.parse($sql1);
+  my $tree2 = $sqlat.parse($sql2);
 
-  undef $sql_differ;
+  $sql_differ = Nil;
   return 1 if _eq_sql($tree1, $tree2);
 }
 
@@ -160,7 +164,7 @@ sub _eq_sql {
 
   # one is defined the other not
   if ((defined $left) xor (defined $right)) {
-    $sql_differ = sprintf ("[%s] != [%s]\n", map { defined $_ ? $sqlat->unparse($_) : 'N/A' } ($left, $right) );
+    $sql_differ = sprintf ("[%s] != [%s]\n", map { defined $_ ?? $sqlat.unparse($_) !! 'N/A' }, $left, $right );
     return 0;
   }
 
@@ -170,33 +174,33 @@ sub _eq_sql {
   }
 
   # both are empty
-  elsif (@$left == 0 and @$right == 0) {
+  elsif ($left.elems == 0 and $right.elems == 0) {
     return 1;
   }
 
   # one is empty
-  if (@$left == 0 or @$right == 0) {
-    $sql_differ = sprintf ("left: %s\nright: %s\n", map { @$_ ? $sqlat->unparse($_) : 'N/A'} ($left, $right) );
+  if ($left.elems == 0 or $right.elems == 0) {
+    $sql_differ = sprintf ("left: %s\nright: %s\n", map { .elems ?? $sqlat.unparse($_) !! 'N/A'}, $left, $right );
     return 0;
   }
 
   # one is a list, the other is an op with a list
-  elsif (ref $left->[0] xor ref $right->[0]) {
+  elsif ($left[0] ~~ List xor $right[0] ~~ List) {
     $sql_differ = sprintf ("[%s] != [%s]\nleft: %s\nright: %s\n", map
-      { ref $_ ? $sqlat->unparse($_) : $_ }
-      ($left->[0], $right->[0], $left, $right)
+      { $_ ~~ List ?? $sqlat.unparse($_) !! $_ },
+      $left[0], $right[0], $left, $right
     );
     return 0;
   }
 
   # both are lists
-  elsif (ref $left->[0]) {
-    for (my $i = 0; $i <= $#$left or $i <= $#$right; $i++ ) {
-      if (not _eq_sql ($left->[$i], $right->[$i]) ) {
-        if (! $sql_differ or $sql_differ !~ /left\:\s .+ right:\s/xs) {
+  elsif ($left[0] ~~ List) {
+    loop (my $i = 0; $i <= $left.end or $i <= $right.end; $i++ ) {
+      if (not _eq_sql ($left[$i], $right[$i]) ) {
+        if (! $sql_differ or $sql_differ !~~ / left \: \s .+ right \: \s /) {
           $sql_differ ||= '';
-          $sql_differ .= "\n" unless $sql_differ =~ /\n\z/;
-          $sql_differ .= sprintf ("left: %s\nright: %s\n", map { $sqlat->unparse($_) } ($left, $right) );
+          $sql_differ ~= "\n" unless $sql_differ ~~ / \n $/ ;
+          $sql_differ ~= sprintf ("left: %s\nright: %s\n", map { $sqlat.unparse($_) }, ($left, $right) );
         }
         return 0;
       }
@@ -209,45 +213,45 @@ sub _eq_sql {
 
     # unroll parenthesis if possible/allowed
     unless ($parenthesis_significant) {
-      $sqlat->_parenthesis_unroll($_) for $left, $right;
+      $sqlat._parenthesis_unroll($_) for $left, $right;
     }
 
     # unroll ASC order by's
     unless ($order_by_asc_significant) {
-      $sqlat->_strip_asc_from_order_by($_) for $left, $right;
+      $sqlat._strip_asc_from_order_by($_) for $left, $right;
     }
 
-    if ($left->[0] ne $right->[0]) {
-      $sql_differ = sprintf "OP [$left->[0]] != [$right->[0]] in\nleft: %s\nright: %s\n",
-        $sqlat->unparse($left),
-        $sqlat->unparse($right)
+    if ($left[0] ne $right[0]) {
+      $sql_differ = sprintf "OP [%s] != [%s] in\nleft: %s\nright: %s\n",
+        $left[0],
+        $right[0],
+        $sqlat.unparse($left),
+        $sqlat.unparse($right)
       ;
       return 0;
     }
 
     # literals have a different arg-sig
-    elsif ($left->[0] eq '-LITERAL') {
-      (my $l = " $left->[1][0] " ) =~ s/\s+/ /g;
-      (my $r = " $right->[1][0] ") =~ s/\s+/ /g;
-      my $eq = $case_sensitive ? $l eq $r : uc($l) eq uc($r);
+    elsif ($left[0] eq '-LITERAL') {
+      (my $l = ' '~$left[1][0]~' ' ) ~~ s:g/\s+/ /;
+      (my $r = ' '~$right[1][0]~' ') ~~ s:g/\s+/ /;
+      my $eq = $case_sensitive ?? $l eq $r !! uc($l) eq uc($r);
       $sql_differ = "[$l] != [$r]\n" if not $eq;
       return $eq;
     }
 
     # if operators are identical, compare operands
     else {
-      my $eq = _eq_sql($left->[1], $right->[1]);
-      $sql_differ ||= sprintf ("left: %s\nright: %s\n", map { $sqlat->unparse($_) } ($left, $right) ) if not $eq;
+      my $eq = _eq_sql($left[1], $right[1]);
+      $sql_differ ||= sprintf ("left: %s\nright: %s\n", map { $sqlat.unparse($_) }, ($left, $right) ) if not $eq;
       return $eq;
     }
   }
 }
 
-sub parse { $sqlat->parse(@_) }
-1;
+sub parse { $sqlat.parse(@_) }
 
-
-__END__
+=finish
 
 =head1 NAME
 
@@ -255,14 +259,15 @@ SQL::Abstract::Test - Helper function for testing SQL::Abstract
 
 =head1 SYNOPSIS
 
-  use SQL::Abstract;
-  use Test::More;
+  use v6;
+  use SQL::Abstract6;
+  use Test;
   use SQL::Abstract::Test import => [qw/
     is_same_sql_bind is_same_sql is_same_bind
     eq_sql_bind eq_sql eq_bind
   /];
 
-  my ($sql, @bind) = SQL::Abstract->new->select(%args);
+  my ($sql, @bind) = SQL::Abstract.new.select(%args);
 
   is_same_sql_bind($given_sql,    \@given_bind,
                    $expected_sql, \@expected_bind, $test_msg);
@@ -303,20 +308,20 @@ to C<t/10test.t>
 =head2 is_same_sql_bind
 
   is_same_sql_bind(
-    $given_sql, \@given_bind,
-    $expected_sql, \@expected_bind,
+    $given_sql, @given_bind,
+    $expected_sql, @expected_bind,
     $test_msg
   );
 
   is_same_sql_bind(
-    \[$given_sql, @given_bind],
-    \[$expected_sql, @expected_bind],
+    [$given_sql, @given_bind],
+    [$expected_sql, @expected_bind],
     $test_msg
   );
 
   is_same_sql_bind(
-    $dbic_rs->as_query
-    $expected_sql, \@expected_bind,
+    $dbi6_rs.as_query
+    [$expected_sql, @expected_bind],
     $test_msg
   );
 
@@ -353,18 +358,18 @@ If the test fails, a detailed diagnostic is printed.
 =head2 eq_sql_bind
 
   my $is_same = eq_sql_bind(
-    $given_sql, \@given_bind,
-    $expected_sql, \@expected_bind,
+    $given_sql, @given_bind,
+    $expected_sql, @expected_bind,
   );
 
   my $is_same = eq_sql_bind(
-    \[$given_sql, @given_bind],
-    \[$expected_sql, @expected_bind],
+    [$given_sql, @given_bind],
+    [$expected_sql, @expected_bind],
   );
 
   my $is_same = eq_sql_bind(
-    $dbic_rs->as_query
-    $expected_sql, \@expected_bind,
+    $dbi6_rs.as_query
+    [ $expected_sql, @expected_bind ],
   );
 
 Unpacks C<@_> depending on the given arguments and calls L</eq_sql> and
@@ -375,14 +380,14 @@ L</eq_bind>, returning their combined result.
   my $is_same = eq_sql($given_sql, $expected_sql);
 
 Compares the abstract syntax of two SQL statements. Similar to L</is_same_sql>,
-but it just returns a boolean value and does not print diagnostics or talk to
-L<Test::Builder>. If the result is false, the global variable L</$sql_differ>
+but it just returns a boolean value and does not print diagnostics.
+If the result is false, the global variable L</$sql_differ>
 will contain the SQL portion where a difference was encountered; this is useful
 for printing diagnostics.
 
 =head2 eq_bind
 
-  my $is_same = eq_sql(\@given_bind, \@expected_bind);
+  my $is_same = eq_sql(@given_bind, @expected_bind);
 
 Compares two lists of bind values, taking into account the fact that some of
 the values may be arrayrefs (see L<SQL::Abstract/bindtype>). Similar to
@@ -430,3 +435,6 @@ Copyright 2008 by Laurent Dami.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
+
+=cut
+# vim: set syntax=perl6:
