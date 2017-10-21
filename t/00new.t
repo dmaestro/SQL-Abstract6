@@ -8,7 +8,7 @@ use SQL::Abstract6;
 my @handle_tests = (
       #1
       {
-              args => {logic => 'OR'},
+              args => \(logic => 'OR'),
               stmt => 'SELECT * FROM test WHERE ( a = ? AND b = ? )'
       },
       #2
@@ -18,63 +18,63 @@ my @handle_tests = (
       },
       #3
       {
-              args => {case => "upper"},
+              args => \(case => "upper"),
               stmt => 'SELECT * FROM test WHERE ( a = ? AND b = ? )'
       },
       #4
       {
-              args => {case => "upper", cmp => "="},
+              args => \(case => "upper", cmp => "="),
               stmt => 'SELECT * FROM test WHERE ( a = ? AND b = ? )'
       },
       #5
       {
-              args => {cmp => "=", logic => 'or'},
+              args => \(cmp => "=", logic => 'or'),
               stmt => 'SELECT * FROM test WHERE ( a = ? AND b = ? )'
       },
       #6
       {
-              args => {cmp => "like"},
+              args => \(cmp => "like"),
               stmt => 'SELECT * FROM test WHERE ( a LIKE ? AND b LIKE ? )'
       },
       #7
       {
-              args => {logic => "or", cmp => "like"},
+              args => \(logic => "or", cmp => "like"),
               stmt => 'SELECT * FROM test WHERE ( a LIKE ? AND b LIKE ? )'
       },
       #8
       {
-              args => {case => "lower"},
+              args => \(case => "lower"),
               stmt => 'select * from test where ( a = ? and b = ? )'
       },
       #9
       {
-              args => {case => "lower", cmp => "="},
+              args => \(case => "lower", cmp => "="),
               stmt => 'select * from test where ( a = ? and b = ? )'
       },
       #10
       {
-              args => {case => "lower", cmp => "like"},
+              args => \(case => "lower", cmp => "like"),
               stmt => 'select * from test where ( a like ? and b like ? )'
       },
       #11
       {
-              args => {case => "lower", convert => "lower", cmp => "like"},
+              args => \(case => "lower", convert => "lower", cmp => "like"),
               stmt => 'select * from test where ( lower(a) like lower(?) and lower(b) like lower(?) )'
       },
       #12
       {
-              args => {convert => "Round"},
+              args => \(convert => "Round"),
               stmt => 'SELECT * FROM test WHERE ( ROUND(a) = ROUND(?) AND ROUND(b) = ROUND(?) )',
       },
       #13
       {
-              args => {convert => "lower"},
+              args => \(convert => "lower"),
               stmt => 'SELECT * FROM test WHERE ( ( LOWER(ticket) = LOWER(?) ) OR ( LOWER(hostname) = LOWER(?) ) OR ( LOWER(taco) = LOWER(?) ) OR ( LOWER(salami) = LOWER(?) ) )',
               where => [ { ticket => 11 }, { hostname => 11 }, { taco => 'salad' }, { salami => 'punch' } ],
       },
       #14
       {
-              args => {convert => "upper"},
+              args => \(convert => "upper"),
               stmt => 'SELECT * FROM test WHERE ( ( UPPER(hostname) IN ( UPPER(?), UPPER(?), UPPER(?), UPPER(?) ) AND ( ( UPPER(ticket) = UPPER(?) ) OR ( UPPER(ticket) = UPPER(?) ) OR ( UPPER(ticket) = UPPER(?) ) ) ) OR ( UPPER(tack) BETWEEN UPPER(?) AND UPPER(?) ) OR ( ( ( UPPER(a) = UPPER(?) ) OR ( UPPER(a) = UPPER(?) ) OR ( UPPER(a) = UPPER(?) ) ) AND ( ( UPPER(e) != UPPER(?) ) OR ( UPPER(e) != UPPER(?) ) ) AND UPPER(q) NOT IN ( UPPER(?), UPPER(?), UPPER(?), UPPER(?), UPPER(?), UPPER(?), UPPER(?) ) ) )',
               where => [ { ticket => [11, 12, 13],
                            hostname => { in => ['ntf', 'avd', 'bvd', '123'] } },
@@ -87,7 +87,7 @@ my @handle_tests = (
 );
 
 for (@handle_tests) {
-  my $sqla  = SQL::Abstract6.new($_<args>);
+  my $sqla  = SQL::Abstract6.new(|$_<args>);
   my $stmt;
   stderr-is {
     $stmt = $sqla.select(

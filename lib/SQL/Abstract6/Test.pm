@@ -3,6 +3,7 @@ use v6;
 
 use Test;
 use SQL::Abstract::Tree:from<Perl5>;
+use Inline::Perl5;
 
 #   our @EXPORT_OK = qw(
 #     is_same_sql_bind is_same_sql is_same_bind
@@ -159,8 +160,7 @@ sub eq_sql is export(:test) {
   return 1 if _eq_sql($tree1, $tree2);
 }
 
-sub _eq_sql {
-  my ($left, $right) = @_;
+sub _eq_sql ($left, $right) {
 
   # one is defined the other not
   if ((defined $left) xor (defined $right)) {
@@ -223,8 +223,8 @@ sub _eq_sql {
 
     if ($left[0] ne $right[0]) {
       $sql_differ = sprintf "OP [%s] != [%s] in\nleft: %s\nright: %s\n",
-        $left[0],
-        $right[0],
+        $left[0].item,
+        $right[0].item,
         $sqlat.unparse($left),
         $sqlat.unparse($right)
       ;
@@ -249,7 +249,7 @@ sub _eq_sql {
   }
 }
 
-sub parse { $sqlat.parse(@_) }
+our sub parse { $sqlat.parse(@_) }
 
 =finish
 

@@ -994,15 +994,14 @@ for @sql_tests -> $test {
   my %restore_globals;
 
   for ($test<opts> || {} ).keys {
-    %restore_globals{$_} = $SQL::Abstract::Test::($_);
-    $SQL::Abstract::Test::($_) = $test<opts>{$_};
+    %restore_globals{$_} = $SQL::Abstract6::Test::($_);
+    $SQL::Abstract6::Test::($_) = $test<opts>{$_};
   }
 
   my $statements = $test<statements>;
   while ($statements.elems) {
     my $sql1 = shift $statements;
-    for $statements -> $sql2 {
-
+    for |$statements -> $sql2 {
       my $equal = eq_sql($sql1, $sql2);
 
       todo($test<todo>) if $test<todo>;
@@ -1014,7 +1013,7 @@ for @sql_tests -> $test {
       }
 
       if ($equal ^^ $test<equal>) {
-        my ($ast1, $ast2) = map { SQL::Abstract::Test::parse($_) }, ($sql1, $sql2);
+        my ($ast1, $ast2) = map { SQL::Abstract6::Test::parse($_) }, ($sql1, $sql2);
         $_ = dumper($_) for ($ast1, $ast2);
 
         diag "sql1: $sql1";
@@ -1026,7 +1025,7 @@ for @sql_tests -> $test {
     }
   }
 
-  $SQL::Abstract::Test::($_) = %restore_globals{$_}
+  $SQL::Abstract6::Test::($_) = %restore_globals{$_}
     for keys %restore_globals;
 }
 
@@ -1034,7 +1033,7 @@ for @bind_tests -> $test {
   my $bindvals = $test<bindvals>;
   while ($bindvals) {
     my $bind1 = shift $bindvals;
-    for $bindvals -> $bind2 {
+    for |$bindvals -> $bind2 {
       my $equal = eq_bind($bind1, $bind2);
       if ($test<equal>) {
         ok($equal, "equal bind values considered equal");
