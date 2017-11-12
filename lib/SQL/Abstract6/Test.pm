@@ -149,26 +149,32 @@ sub eq_bind($left, $right)  is export(:test) {
     $left eqv $right;
 };
 
+sub debug(*@msg) {
+    if (%*ENV<SQL_ABS_DEBUG>) {
+        note |@msg;
+    }
+}
+
 sub eq_sql is export(:test) {
   my ($sql1, $sql2) = @_;
 
-  note 'eq_sql[0]: ' ~ $sql1.perl;
-  note 'eq_sql[1]: ' ~ $sql2.perl;
+  debug 'eq_sql[0]: ' ~ $sql1.perl;
+  debug 'eq_sql[1]: ' ~ $sql2.perl;
 
   # parse
   my $tree1 = $sqlat.parse($sql1);
   my $tree2 = $sqlat.parse($sql2);
-  note $tree1.perl;
-  note $tree2.perl;
+  debug $tree1.perl;
+  debug $tree2.perl;
 
   $sql_differ = Nil;
   return 1 if _eq_sql($tree1, $tree2);
 }
 
 sub _eq_sql ($left, $right) {
-  note '_eq_sql';
-  note 'Left - ' ~ $left.perl;
-  note 'Right- ' ~ $right.perl;
+  debug '_eq_sql';
+  debug 'Left - ' ~ $left.perl;
+  debug 'Right- ' ~ $right.perl;
 
   # one is defined the other not
   if ((defined $left) xor (defined $right)) {
@@ -195,22 +201,22 @@ sub _eq_sql ($left, $right) {
 
   # one is a list, the other is an op with a list
   elsif ($left[0] ~~ P5List xor $right[0] ~~ P5List) {
-    note 'List / OP-List:';
-    dd ($left, $right);
+    debug 'List / OP-List:'
+        and dd ($left, $right);
     $sql_differ = sprintf("[%s] != [%s]\nleft: %s\nright: %s\n", map
       { $_ ~~ P5List ?? $sqlat.unparse($_) !! $_ },
       $left[0], $right[0], $left, $right
     );
-    note 'Difference computed';
+    debug 'Difference computed';
     return 0;
   }
 
   # both are lists
   elsif ($left[0] ~~ P5List) {
-    note 'Both lists';
+    debug 'Both lists';
     loop (my $i = 0; $i <= $left.end or $i <= $right.end; $i++ ) {
-      note $left[$i].perl;
-      note $right[$i].perl;
+      debug $left[$i].perl;
+      debug $right[$i].perl;
       if (not _eq_sql($left[$i], $right[$i]) ) {
         if (! $sql_differ or $sql_differ !~~ / left \: \s .+ right \: \s /) {
           $sql_differ ||= '';
@@ -237,14 +243,14 @@ sub _eq_sql ($left, $right) {
     }
 
     if ($left[0] ne $right[0]) {
-      note 'Both ops:';
+      debug 'Both ops:';
       $sql_differ = sprintf "OP [%s] != [%s] in\nleft: %s\nright: %s\n",
         $left[0].item,
         $right[0].item,
         $sqlat.unparse($left),
         $sqlat.unparse($right)
       ;
-      note 'Difference computed';
+      debug 'Difference computed';
       return 0;
     }
 
@@ -259,9 +265,9 @@ sub _eq_sql ($left, $right) {
 
     # if operators are identical, compare operands
     else {
-      note 'Same op:';
-      note 'Left  operand: ' ~ $left[1].perl;
-      note 'Right operand: ' ~ $right[1].perl;
+      debug 'Same op:';
+      debug 'Left  operand: ' ~ $left[1].perl;
+      debug 'Right operand: ' ~ $right[1].perl;
       my $eq = _eq_sql($left[1], $right[1]);
       $sql_differ ||= sprintf("left: %s\nright: %s\n", map { $sqlat.unparse($_) }, ($left, $right) ) if not $eq;
       return $eq;

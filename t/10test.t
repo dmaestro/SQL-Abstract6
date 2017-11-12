@@ -1002,10 +1002,6 @@ for @sql_tests -> $test {
   while ($statements.elems) {
     my $sql1 = shift $statements;
     for |$statements -> $sql2 {
-
-      note 'Pass: ' ~ ++$;
-      note $sql1;
-      note $sql2;
       my $equal = eq_sql($sql1, $sql2);
 
       todo($test<todo>) if $test<todo>;

@@ -80,24 +80,27 @@ my @handle_tests = (
                            hostname => { in => ['ntf', 'avd', 'bvd', '123'] } },
                         { tack => { between => [ qw/tick tock/ ] } },
                         { a => [ qw/b c d/ ],
-                          e => { '!=', [ qw/f g/ ] },
-                          q => { 'not in', [14..20] } } ],
-              warns => "A multi-element arrayref as an argument to the inequality op '!=' is technically equivalent to an always-true 1=1",
+                          e => { '!=' => [ qw/f g/ ] },
+                          q => { 'not in' => [14..20] } } ],
+              warns => rx/ "A multi-element arrayref as an argument to the inequality op '!=' is technically equivalent to an always-true 1=1" /,
       },
 );
 
 for (@handle_tests) {
+  say "Pass "~++$;
+  say $_.perl;
   my $sqla  = SQL::Abstract6.new(|$_<args>);
   my $stmt;
-  stderr-is {
+  dd $sqla;
+  stderr-like {
     $stmt = $sqla.select(
       'test',
       '*',
       $_<where> || { a => 4, b => 0}
-    );
-  }, $_<warns> // "";
+    )[0];
+  }, $_<warns> // rx/^$/;
 
-  is_same_sql($stmt, $_<stmt>);
+  is_same_sql($stmt, $_<stmt>, 'Case '~++$);
 }
 
 done-testing;

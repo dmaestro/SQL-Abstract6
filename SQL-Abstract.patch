@@ -1,0 +1,12 @@
+--- SQL/Abstract.pm.bak	2017-04-03 10:28:00.000000000 -0500
++++ SQL/Abstract.pm	2017-11-12 14:40:14.682787575 -0600
+@@ -67,6 +67,9 @@
+ 
+ sub belch (@) {
+   my($func) = (caller(1))[3];
++  if (scalar keys %v6::) { # running in Inline::Perl5
++      return v6::call('note', "[$func] Warning: ", @_);
++  }
+   Carp::carp "[$func] Warning: ", @_;
+ }
+ 

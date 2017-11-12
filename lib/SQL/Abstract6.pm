@@ -25,8 +25,17 @@ class Abstract6 {
     method !sql_abstract5() {
         if not $!sql_abstract.defined {
             $!sql_abstract = SQL::Abstract.new(
+                case    => $!case,
+                cmp     => $!cmp,
+                logic   => $!logic,
+                convert => $!convert,
             );
         }
         $!sql_abstract;
+    }
+
+    method select($source, $fields, $where?, $order?) {
+        my $sqla = self!sql_abstract5().select($source, $fields, $where, $order);
+        return $sqla.Array; # consider return a query object: [ 'sql', @bindvals ]
     }
 }
