@@ -1002,14 +1002,20 @@ for @sql_tests -> $test {
   while ($statements.elems) {
     my $sql1 = shift $statements;
     for |$statements -> $sql2 {
+
+      note 'Pass: ' ~ ++$;
+      note $sql1;
+      note $sql2;
       my $equal = eq_sql($sql1, $sql2);
 
       todo($test<todo>) if $test<todo>;
 
       if ($test<equal>) {
-        ok($equal, "equal SQL expressions should have been considered equal");
+        ok($equal, "equal SQL expressions should have been considered equal")
+            or last;
       } else {
-        ok(!$equal, "different SQL expressions should have been considered not equal");
+        ok(!$equal, "different SQL expressions should have been considered not equal")
+            or last;
       }
 
       if ($equal ^^ $test<equal>) {
@@ -1027,7 +1033,12 @@ for @sql_tests -> $test {
 
   $SQL::Abstract6::Test::($_) = %restore_globals{$_}
     for keys %restore_globals;
+
+# last if ++$ >= 5;
 }
+
+done-testing;
+exit;
 
 for @bind_tests -> $test {
   my $bindvals = $test<bindvals>;
