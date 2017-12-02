@@ -986,6 +986,7 @@ my @bind_tests = (
 );
 
 for @sql_tests -> $test {
+  last;
 
   # this does not work on 5.8.8 and earlier :(
   #local @{*SQL::Abstract::Test::}{keys %{$test->{opts}}} = map { \$_ } values %{$test->{opts}}

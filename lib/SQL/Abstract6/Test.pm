@@ -145,9 +145,24 @@ multi sub eq_sql_bind(Str $sql1, Array $bind_ref1, Str $sql2, Array $bind_ref2) 
 }
 
 
+subset Scalar of Cool where * ~~ Numeric|Stringy;
 sub eq_bind($left, $right)  is export(:test) {
-    $left eqv $right;
-};
+    note "Left  - " ~ $left.perl;
+    note "right - " ~ $right.perl;
+    $left eqv $right
+    or $left ~~ Scalar && $right ~~ Scalar && ($left cmp $right) === Same
+    or all($left, $right) ~~ Positional && _eq_bind_pos($left, $right);
+}
+
+sub _eq_bind_pos(Positional $left, Positional $right) {
+    if (all(|$left,|$right) ~~ (Stringy|Numeric)) {
+        return all($left »cmp« $right) === Same;
+    }
+    if ($left.elems == 1 && $right.elems == 1) {
+	eq_bind($left[0], $right[0]);
+    }
+    return False;
+}
 
 sub debug(*@msg) {
     if (%*ENV<SQL_ABS_DEBUG>) {
