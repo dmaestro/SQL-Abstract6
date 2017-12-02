@@ -188,13 +188,14 @@ sub _eq_sql ($left, $right) {
   }
 
   # both are empty
-  elsif ($left.elems == 0 and $right.elems == 0) {
+  elsif ($left.Array.elems == 0 and $right.Array.elems == 0) {
     return 1;
   }
 
   subset P5List of Inline::Perl5::Array;
   # one is empty
-  if ($left.elems == 0 or $right.elems == 0) {
+  debug "Left("~$left.elems~") Right("~$right.elems~")";
+  if ($left.Array.elems == 0 or $right.Array.elems == 0) {
     $sql_differ = sprintf("left: %s\nright: %s\n", map { .elems ?? $sqlat.unparse($_) !! 'N/A'}, $left, $right );
     return 0;
   }

@@ -1033,9 +1033,6 @@ for @sql_tests -> $test {
 # last if ++$ >= 5;
 }
 
-done-testing;
-exit;
-
 for @bind_tests -> $test {
   my $bindvals = $test<bindvals>;
   while ($bindvals) {
@@ -1049,8 +1046,8 @@ for @bind_tests -> $test {
       }
 
       if ($equal ^^ $test<equal>) {
-        diag("bind1: " . dumper($bind1));
-        diag("bind2: " . dumper($bind2));
+        diag("bind1: " ~ dumper($bind1));
+        diag("bind2: " ~ dumper($bind2));
       }
     }
   }
@@ -1079,7 +1076,7 @@ ok(!eq_sql_bind(
 );
 
 # test diag string
-ok (! eq_sql (
+ok (! eq_sql(
   'SELECT owner_name FROM books me WHERE ( source = ? )',
   'SELECT owner_name FROM books me WHERE ( sUOrce = ? )',
 ));
@@ -1089,7 +1086,7 @@ like(
   'expected debug of literal diff',
 );
 
-ok (! eq_sql (
+ok (! eq_sql(
   'SELECT owner_name FROM books me ORDER BY owner_name',
   'SELECT owner_name FROM books me GROUP BY owner_name',
 ));
@@ -1099,7 +1096,7 @@ like(
   'expected debug of op diff',
 );
 
-ok (! eq_sql (
+ok (! eq_sql(
   'SELECT owner_name FROM books WHERE ( source = ? )',
   'SELECT owner_name FROM books'
 ));
@@ -1111,7 +1108,7 @@ like(
 );
 
 
-ok (eq_sql_bind (
+ok (eq_sql_bind(
   \[ 'SELECT foo FROM bar WHERE baz = ? or buzz = ?', [ {} => 1 ], 2 ],
   'SELECT foo FROM bar WHERE (baz = ?) OR buzz = ?',
   [ [ {} => 1 ], 2 ],
